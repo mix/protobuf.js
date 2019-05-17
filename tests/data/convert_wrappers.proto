@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "google/protobuf/wrappers.proto";
+
+message TestMessage {
+  uint32 id                                 = 1;
+  string simple_field                       = 2;
+  google.protobuf.StringValue wrapped_field = 3;
+  uint32 simple_id                          = 4;
+  google.protobuf.UInt32Value wrapped_id    = 5;
+  bool simple_bool                          = 6;
+  google.protobuf.BoolValue wrapped_bool    = 7;
+  uint64 long_field                         = 8;
+}

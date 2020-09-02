@@ -9,15 +9,15 @@ var Enum = require("./enum"),
     util = require("./util");
 
 var WRAPPER_TYPES = [
-    'google.protobuf.BytesValue',
-    'google.protobuf.BoolValue',
-    'google.protobuf.UInt32Value',
-    'google.protobuf.Int32Value',
-    'google.protobuf.UInt64Value',
-    'google.protobuf.Int64Value',
-    'google.protobuf.FloatValue',
-    'google.protobuf.DoubleValue',
-    'google.protobuf.StringValue'
+    "google.protobuf.BytesValue",
+    "google.protobuf.BoolValue",
+    "google.protobuf.UInt32Value",
+    "google.protobuf.Int32Value",
+    "google.protobuf.UInt64Value",
+    "google.protobuf.Int64Value",
+    "google.protobuf.FloatValue",
+    "google.protobuf.DoubleValue",
+    "google.protobuf.StringValue"
 ];
 
 /**
@@ -48,7 +48,7 @@ function genValuePartial_fromObject(gen, field, fieldIndex, prop) {
             ("if(typeof d%s===\"object\" && d%s!==null && d%s.value!==undefined)", prop, prop, prop)
                 ("m%s=types[%i].fromObject(d%s)", prop, fieldIndex, prop)
             ("else")
-                ("m%s=types[%i].fromObject({value: d%s})", prop, fieldIndex, prop)
+                ("m%s=types[%i].fromObject({value: d%s})", prop, fieldIndex, prop);
         } else gen
             ("if(typeof d%s!==\"object\")", prop)
                 ("throw TypeError(%j)", field.fullName + ": object expected")

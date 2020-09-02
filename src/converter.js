@@ -44,7 +44,7 @@ function genValuePartial_fromObject(gen, field, fieldIndex, prop) {
                     ("break");
             } gen
             ("}");
-        } else if (WRAPPER_TYPES.includes(field.type)) { gen
+        } else if (WRAPPER_TYPES.indexOf(field.type) !== -1) { gen
             ("if(typeof d%s===\"object\" && d%s!==null && d%s.value!==undefined)", prop, prop, prop)
                 ("m%s=types[%i].fromObject(d%s)", prop, fieldIndex, prop)
             ("else")
@@ -174,7 +174,7 @@ function genValuePartial_toObject(gen, field, fieldIndex, prop) {
     if (field.resolvedType) {
         if (field.resolvedType instanceof Enum) gen
             ("d%s=o.enums===String?types[%i].values[m%s]:m%s", prop, fieldIndex, prop, prop);
-        else if (WRAPPER_TYPES.includes(field.type)) gen
+        else if (WRAPPER_TYPES.indexOf(field.type) !== -1) gen
             ("d%s=types[%i].toObject(m%s,o).value", prop, fieldIndex, prop);
         else gen
             ("d%s=types[%i].toObject(m%s,o)", prop, fieldIndex, prop);

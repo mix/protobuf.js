@@ -1,5 +1,52 @@
 # Changelog
 
+## [7.4.0](https://github.com/protobufjs/protobuf.js/compare/protobufjs-v7.3.3...protobufjs-v7.4.0) (2024-08-22)
+
+
+### Features
+
+* Add `prepublishOnly` script ([0e4da8b](https://github.com/protobufjs/protobuf.js/commit/0e4da8b158a85af5160e2f4ba5eb097a8dc65cb1))
+
+
+### Bug Fixes
+
+* include ([28e3334](https://github.com/protobufjs/protobuf.js/commit/28e333415d3c85687810e164125997d17baba0bd))
+
+## [7.3.3](https://github.com/protobufjs/protobuf.js/compare/protobufjs-v7.3.2...protobufjs-v7.3.3) (2024-08-16)
+
+
+### Bug Fixes
+
+* handle nullability for optional fields ([59569c1](https://github.com/protobufjs/protobuf.js/commit/59569c12c85c1c7b783ace9a71775b1d05a08e9c))
+
+## [7.3.2](https://github.com/protobufjs/protobuf.js/compare/protobufjs-v7.3.1...protobufjs-v7.3.2) (2024-06-12)
+
+
+### Bug Fixes
+
+* **docs:** Update readme to correct command for creating types ([#1939](https://github.com/protobufjs/protobuf.js/issues/1939)) ([0f9d477](https://github.com/protobufjs/protobuf.js/commit/0f9d4770e0fb360c767241a13696d73edc6536b7))
+
+## [7.3.1](https://github.com/protobufjs/protobuf.js/compare/protobufjs-v7.3.0...protobufjs-v7.3.1) (2024-06-05)
+
+
+### Bug Fixes
+
+* **types:** reserved field in IType can contain reserved names ([#2001](https://github.com/protobufjs/protobuf.js/issues/2001)) ([d1d2c0c](https://github.com/protobufjs/protobuf.js/commit/d1d2c0c7890e07ca1302c83a136051ee0624cba8))
+
+## [7.3.0](https://github.com/protobufjs/protobuf.js/compare/protobufjs-v7.2.6...protobufjs-v7.3.0) (2024-05-10)
+
+
+### Features
+
+* add handling for extension range options ([#1990](https://github.com/protobufjs/protobuf.js/issues/1990)) ([2d58011](https://github.com/protobufjs/protobuf.js/commit/2d58011cc0bc495c68ed70f5aad297deb1722378))
+
+## [7.2.6](https://github.com/protobufjs/protobuf.js/compare/protobufjs-v7.2.5...protobufjs-v7.2.6) (2024-01-16)
+
+
+### Bug Fixes
+
+* report missing import properly in loadSync ([#1960](https://github.com/protobufjs/protobuf.js/issues/1960)) ([af3ff83](https://github.com/protobufjs/protobuf.js/commit/af3ff83dc41c7736b7e57f2a02fd94ac03b76a4c))
+
 ## [7.2.5](https://github.com/protobufjs/protobuf.js/compare/protobufjs-v7.2.4...protobufjs-v7.2.5) (2023-08-21)
 
 

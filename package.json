@@ -1,5 +1,5 @@
 {
-  "name": "protobufjs",
+  "name": "@mix/protobufjs",
   "version": "7.4.0",
   "versionScheme": "~",
   "description": "Protocol Buffers for JavaScript (& TypeScript).",

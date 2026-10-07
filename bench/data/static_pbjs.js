@@ -5,14 +5,14 @@ var $protobuf = require("../../minimal");
 
 var $Reader = $protobuf.Reader, $Writer = $protobuf.Writer, $util = $protobuf.util;
 
-var $root = $protobuf.roots.test_bench || ($protobuf.roots.test_bench = {});
+var $root = $protobuf.roots["test_bench"] || ($protobuf.roots["test_bench"] = {});
 
 $root.Test = (function() {
 
     function Test(properties) {
         if (properties)
             for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
+                if (properties[keys[i]] != null && keys[i] !== "__proto__")
                     this[keys[i]] = properties[keys[i]];
     }
 
@@ -21,43 +21,72 @@ $root.Test = (function() {
     Test.prototype.inner = null;
     Test.prototype.float = 0;
 
-    Test.encode = function encode(message, writer) {
+    Test.encode = function encode(message, writer, q) {
         if (!writer)
             writer = $Writer.create();
+        if (q === undefined)
+            q = 0;
+        if (q > $util.recursionLimit)
+            throw Error("max depth exceeded");
         if (message.string != null && Object.hasOwnProperty.call(message, "string"))
             writer.uint32(10).string(message.string);
         if (message.uint32 != null && Object.hasOwnProperty.call(message, "uint32"))
             writer.uint32(16).uint32(message.uint32);
         if (message.inner != null && Object.hasOwnProperty.call(message, "inner"))
-            $root.Test.Inner.encode(message.inner, writer.uint32(26).fork()).ldelim();
+            $root.Test.Inner.encode(message.inner, writer.uint32(26).fork(), q + 1).ldelim();
         if (message.float != null && Object.hasOwnProperty.call(message, "float"))
             writer.uint32(37).float(message.float);
         return writer;
     };
 
-    Test.decode = function decode(reader, length) {
+    Test.decode = function decode(reader, length, error, long) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.Test();
+        if (long === undefined)
+            long = 0;
+        if (long > $Reader.recursionLimit)
+            throw Error("maximum nesting depth exceeded");
+        var end, message;
+        if (length === undefined)
+            end = reader.len;
+        else {
+            end = reader.pos + length;
+            if (end > reader.len)
+                throw RangeError("index out of range");
+            length = reader.len;
+            reader.len = end;
+        }
+        message = new $root.Test();
         while (reader.pos < end) {
             var tag = reader.uint32();
+            if (tag === error)
+                break;
             switch (tag >>> 3) {
-            case 1:
-                message.string = reader.string();
-                break;
-            case 2:
-                message.uint32 = reader.uint32();
-                break;
-            case 3:
-                message.inner = $root.Test.Inner.decode(reader, reader.uint32());
-                break;
-            case 4:
-                message.float = reader.float();
-                break;
+            case 1: {
+                    message.string = reader.string();
+                    break;
+                }
+            case 2: {
+                    message.uint32 = reader.uint32();
+                    break;
+                }
+            case 3: {
+                    message.inner = $root.Test.Inner.decode(reader, reader.uint32(), undefined, long + 1);
+                    break;
+                }
+            case 4: {
+                    message.float = reader.float();
+                    break;
+                }
             default:
-                reader.skipType(tag & 7);
+                reader.skipType(tag & 7, long);
                 break;
             }
+        }
+        if (length !== undefined) {
+            if (reader.pos !== end)
+                throw RangeError("index out of range");
+            reader.len = length;
         }
         return message;
     };
@@ -67,7 +96,7 @@ $root.Test = (function() {
         function Inner(properties) {
             if (properties)
                 for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
+                    if (properties[keys[i]] != null && keys[i] !== "__proto__")
                         this[keys[i]] = properties[keys[i]];
         }
 
@@ -75,38 +104,66 @@ $root.Test = (function() {
         Inner.prototype.innerInner = null;
         Inner.prototype.outer = null;
 
-        Inner.encode = function encode(message, writer) {
+        Inner.encode = function encode(message, writer, q) {
             if (!writer)
                 writer = $Writer.create();
+            if (q === undefined)
+                q = 0;
+            if (q > $util.recursionLimit)
+                throw Error("max depth exceeded");
             if (message.int32 != null && Object.hasOwnProperty.call(message, "int32"))
                 writer.uint32(8).int32(message.int32);
             if (message.innerInner != null && Object.hasOwnProperty.call(message, "innerInner"))
-                $root.Test.Inner.InnerInner.encode(message.innerInner, writer.uint32(18).fork()).ldelim();
+                $root.Test.Inner.InnerInner.encode(message.innerInner, writer.uint32(18).fork(), q + 1).ldelim();
             if (message.outer != null && Object.hasOwnProperty.call(message, "outer"))
-                $root.Outer.encode(message.outer, writer.uint32(26).fork()).ldelim();
+                $root.Outer.encode(message.outer, writer.uint32(26).fork(), q + 1).ldelim();
             return writer;
         };
 
-        Inner.decode = function decode(reader, length) {
+        Inner.decode = function decode(reader, length, error, long) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
-            var end = length === undefined ? reader.len : reader.pos + length, message = new $root.Test.Inner();
+            if (long === undefined)
+                long = 0;
+            if (long > $Reader.recursionLimit)
+                throw Error("maximum nesting depth exceeded");
+            var end, message;
+            if (length === undefined)
+                end = reader.len;
+            else {
+                end = reader.pos + length;
+                if (end > reader.len)
+                    throw RangeError("index out of range");
+                length = reader.len;
+                reader.len = end;
+            }
+            message = new $root.Test.Inner();
             while (reader.pos < end) {
                 var tag = reader.uint32();
+                if (tag === error)
+                    break;
                 switch (tag >>> 3) {
-                case 1:
-                    message.int32 = reader.int32();
-                    break;
-                case 2:
-                    message.innerInner = $root.Test.Inner.InnerInner.decode(reader, reader.uint32());
-                    break;
-                case 3:
-                    message.outer = $root.Outer.decode(reader, reader.uint32());
-                    break;
+                case 1: {
+                        message.int32 = reader.int32();
+                        break;
+                    }
+                case 2: {
+                        message.innerInner = $root.Test.Inner.InnerInner.decode(reader, reader.uint32(), undefined, long + 1);
+                        break;
+                    }
+                case 3: {
+                        message.outer = $root.Outer.decode(reader, reader.uint32(), undefined, long + 1);
+                        break;
+                    }
                 default:
-                    reader.skipType(tag & 7);
+                    reader.skipType(tag & 7, long);
                     break;
                 }
+            }
+            if (length !== undefined) {
+                if (reader.pos !== end)
+                    throw RangeError("index out of range");
+                reader.len = length;
             }
             return message;
         };
@@ -116,7 +173,7 @@ $root.Test = (function() {
             function InnerInner(properties) {
                 if (properties)
                     for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                        if (properties[keys[i]] != null)
+                        if (properties[keys[i]] != null && keys[i] !== "__proto__")
                             this[keys[i]] = properties[keys[i]];
             }
 
@@ -124,9 +181,13 @@ $root.Test = (function() {
             InnerInner.prototype["enum"] = 0;
             InnerInner.prototype.sint32 = 0;
 
-            InnerInner.encode = function encode(message, writer) {
+            InnerInner.encode = function encode(message, writer, q) {
                 if (!writer)
                     writer = $Writer.create();
+                if (q === undefined)
+                    q = 0;
+                if (q > $util.recursionLimit)
+                    throw Error("max depth exceeded");
                 if (message.long != null && Object.hasOwnProperty.call(message, "long"))
                     writer.uint32(8).int64(message.long);
                 if (message["enum"] != null && Object.hasOwnProperty.call(message, "enum"))
@@ -136,26 +197,50 @@ $root.Test = (function() {
                 return writer;
             };
 
-            InnerInner.decode = function decode(reader, length) {
+            InnerInner.decode = function decode(reader, length, error, long) {
                 if (!(reader instanceof $Reader))
                     reader = $Reader.create(reader);
-                var end = length === undefined ? reader.len : reader.pos + length, message = new $root.Test.Inner.InnerInner();
+                if (long === undefined)
+                    long = 0;
+                if (long > $Reader.recursionLimit)
+                    throw Error("maximum nesting depth exceeded");
+                var end, message;
+                if (length === undefined)
+                    end = reader.len;
+                else {
+                    end = reader.pos + length;
+                    if (end > reader.len)
+                        throw RangeError("index out of range");
+                    length = reader.len;
+                    reader.len = end;
+                }
+                message = new $root.Test.Inner.InnerInner();
                 while (reader.pos < end) {
                     var tag = reader.uint32();
+                    if (tag === error)
+                        break;
                     switch (tag >>> 3) {
-                    case 1:
-                        message.long = reader.int64();
-                        break;
-                    case 2:
-                        message["enum"] = reader.int32();
-                        break;
-                    case 3:
-                        message.sint32 = reader.sint32();
-                        break;
+                    case 1: {
+                            message.long = reader.int64();
+                            break;
+                        }
+                    case 2: {
+                            message["enum"] = reader.int32();
+                            break;
+                        }
+                    case 3: {
+                            message.sint32 = reader.sint32();
+                            break;
+                        }
                     default:
-                        reader.skipType(tag & 7);
+                        reader.skipType(tag & 7, long);
                         break;
                     }
+                }
+                if (length !== undefined) {
+                    if (reader.pos !== end)
+                        throw RangeError("index out of range");
+                    reader.len = length;
                 }
                 return message;
             };
@@ -185,16 +270,20 @@ $root.Outer = (function() {
         this.bool = [];
         if (properties)
             for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
+                if (properties[keys[i]] != null && keys[i] !== "__proto__")
                     this[keys[i]] = properties[keys[i]];
     }
 
     Outer.prototype.bool = $util.emptyArray;
     Outer.prototype.double = 0;
 
-    Outer.encode = function encode(message, writer) {
+    Outer.encode = function encode(message, writer, q) {
         if (!writer)
             writer = $Writer.create();
+        if (q === undefined)
+            q = 0;
+        if (q > $util.recursionLimit)
+            throw Error("max depth exceeded");
         if (message.bool != null && message.bool.length) {
             writer.uint32(10).fork();
             for (var i = 0; i < message.bool.length; ++i)
@@ -206,30 +295,59 @@ $root.Outer = (function() {
         return writer;
     };
 
-    Outer.decode = function decode(reader, length) {
+    Outer.decode = function decode(reader, length, error, long) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.Outer();
+        if (long === undefined)
+            long = 0;
+        if (long > $Reader.recursionLimit)
+            throw Error("maximum nesting depth exceeded");
+        var end, message;
+        if (length === undefined)
+            end = reader.len;
+        else {
+            end = reader.pos + length;
+            if (end > reader.len)
+                throw RangeError("index out of range");
+            length = reader.len;
+            reader.len = end;
+        }
+        message = new $root.Outer();
         while (reader.pos < end) {
             var tag = reader.uint32();
+            if (tag === error)
+                break;
             switch (tag >>> 3) {
-            case 1:
-                if (!(message.bool && message.bool.length))
-                    message.bool = [];
-                if ((tag & 7) === 2) {
-                    var end2 = reader.uint32() + reader.pos;
-                    while (reader.pos < end2)
+            case 1: {
+                    if (!(message.bool && message.bool.length))
+                        message.bool = [];
+                    if ((tag & 7) === 2) {
+                        var end2 = reader.uint32() + reader.pos;
+                        if (end2 > reader.len)
+                            throw RangeError("index out of range");
+                        reader.len = end2;
+                        while (reader.pos < end2)
+                            message.bool.push(reader.bool());
+                        if (reader.pos !== end2)
+                            throw RangeError("index out of range");
+                        reader.len = end;
+                    } else
                         message.bool.push(reader.bool());
-                } else
-                    message.bool.push(reader.bool());
-                break;
-            case 2:
-                message.double = reader.double();
-                break;
+                    break;
+                }
+            case 2: {
+                    message.double = reader.double();
+                    break;
+                }
             default:
-                reader.skipType(tag & 7);
+                reader.skipType(tag & 7, long);
                 break;
             }
+        }
+        if (length !== undefined) {
+            if (reader.pos !== end)
+                throw RangeError("index out of range");
+            reader.len = length;
         }
         return message;
     };

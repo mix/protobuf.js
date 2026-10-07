@@ -86,6 +86,19 @@ tape.test("reflected namespaces", function(test) {
     var sub = ns.define("sub", {});
     test.equal(ns.lookup("sub"), sub, "should define sub namespaces");
 
+    var recursionLimit = protobuf.util.recursionLimit;
+    protobuf.util.recursionLimit = 3;
+    try {
+        test.doesNotThrow(function() {
+            ns.define("a.b.c");
+        }, "should define namespace paths up to the recursion limit");
+        test.throws(function() {
+            ns.define("a.b.c.d");
+        }, /max depth exceeded/, "should reject excessively nested namespace paths");
+    } finally {
+        protobuf.util.recursionLimit = recursionLimit;
+    }
+
     test.throws(function() {
         ns.add(new protobuf.ReflectionObject("invalid"));
     }, TypeError, "should throw when adding invalid nested objects");
@@ -110,6 +123,31 @@ tape.test("reflected namespaces", function(test) {
         ns.define("MyEnum");
     }, Error, "should throw when trying to define a path conflicting with non-namespace objects");
 
+    var specialRoot = protobuf.Root.fromJSON(JSON.parse("{\"nested\":{\"__proto__\":{\"fields\":{}},\"constructor\":{\"fields\":{}}}}"));
+    test.equal(specialRoot.lookup("__proto__"), null, "should ignore reserved nested object names");
+    test.equal(Object.getPrototypeOf(specialRoot._lookupCache), null, "should isolate lookup cache keys");
+
+    var fallbackRoot = protobuf.Root.fromJSON({
+        nested: {
+            A: {
+                nested: {
+                    Point3D: { fields: {} }
+                }
+            },
+            C: {
+                nested: {
+                    Point3D: { fields: {} }
+                }
+            },
+            B: {
+                fields: {
+                    p: { type: "Point3D", id: 1 }
+                }
+            }
+        }
+    }).resolveAll();
+    test.equal(fallbackRoot.lookupType("B").fields.p.resolvedType.fullName, ".A.Point3D", "should preserve legacy first-match nested fallback lookup");
+
     ns = protobuf.Namespace.fromJSON("My", {
         nested: {
             Message: { fields: {} },
@@ -128,6 +166,87 @@ tape.test("reflected namespaces", function(test) {
             Other: { }
         }
     }, "should create from Type, Enum, Service, extension Field and Namespace JSON");
+
+    test.end();
+});
+
+tape.test("JSON descriptor nesting", function(test) {
+    function nestedNamespaceDescriptor(depth) {
+        var root = { nested: {} };
+        var nested = root.nested;
+        for (var i = 0; i < depth; ++i) {
+            nested["Level" + i] = { nested: {} };
+            nested = nested["Level" + i].nested;
+        }
+        return root;
+    }
+
+    function nestedTypeDescriptor(depth) {
+        var root = { nested: {} };
+        var nested = root.nested;
+        for (var i = 0; i < depth; ++i) {
+            nested["Message" + i] = { fields: {}, nested: {} };
+            nested = nested["Message" + i].nested;
+        }
+        return root;
+    }
+
+    function nestedServiceDescriptor(depth) {
+        var root = { nested: {} };
+        var nested = root.nested;
+        for (var i = 0; i < depth; ++i) {
+            nested["Service" + i] = { methods: {}, nested: {} };
+            nested = nested["Service" + i].nested;
+        }
+        return root;
+    }
+
+    function nestedOptionPathDescriptor(depth) {
+        var path = "features";
+        for (var i = 0; i < depth; ++i)
+            path += ".a";
+        var descriptor = { options: {}, nested: {} };
+        descriptor.options[path] = true;
+        return descriptor;
+    }
+
+    var recursionLimit = protobuf.util.recursionLimit,
+        nestingLimit = protobuf.util.nestingLimit;
+    try {
+        protobuf.util.recursionLimit = 3;
+        protobuf.util.nestingLimit = 100;
+        test.doesNotThrow(function() {
+            protobuf.Root.fromJSON(nestedNamespaceDescriptor(3));
+        }, "should load namespace descriptors up to the recursion limit");
+        test.throws(function() {
+            protobuf.Root.fromJSON(nestedNamespaceDescriptor(4));
+        }, /max depth exceeded/, "should reject excessively nested namespace descriptors");
+        protobuf.util.recursionLimit = 100;
+        protobuf.util.nestingLimit = 3;
+        test.doesNotThrow(function() {
+            protobuf.Root.fromJSON(nestedTypeDescriptor(3));
+        }, "should load type descriptors up to the nesting limit");
+        test.throws(function() {
+            protobuf.Root.fromJSON(nestedTypeDescriptor(4));
+        }, /max depth exceeded/, "should reject excessively nested type descriptors");
+        protobuf.util.recursionLimit = 3;
+        protobuf.util.nestingLimit = 100;
+        test.doesNotThrow(function() {
+            protobuf.Root.fromJSON(nestedServiceDescriptor(3));
+        }, "should load service descriptors up to the recursion limit");
+        test.throws(function() {
+            protobuf.Root.fromJSON(nestedServiceDescriptor(4));
+        }, /max depth exceeded/, "should reject excessively nested service descriptors");
+        test.doesNotThrow(function() {
+            protobuf.Root.fromJSON(nestedOptionPathDescriptor(2));
+        }, "should load option paths up to the recursion limit");
+        test.throws(function() {
+            protobuf.Root.fromJSON(nestedOptionPathDescriptor(3));
+        }, /max depth exceeded/, "should reject excessively nested option paths");
+    } finally {
+        protobuf.util.recursionLimit = recursionLimit;
+        protobuf.util.nestingLimit = nestingLimit;
+    }
 
     test.end();
 });

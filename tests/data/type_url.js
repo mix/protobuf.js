@@ -7,7 +7,7 @@ var $protobuf = require("../../minimal");
 var $Reader = $protobuf.Reader, $Writer = $protobuf.Writer, $util = $protobuf.util;
 
 // Exported root namespace
-var $root = $protobuf.roots.test_type_url || ($protobuf.roots.test_type_url = {});
+var $root = $protobuf.roots["test_type_url"] || ($protobuf.roots["test_type_url"] = {});
 
 $root.TypeUrlTest = (function() {
 
@@ -29,7 +29,7 @@ $root.TypeUrlTest = (function() {
     function TypeUrlTest(properties) {
         if (properties)
             for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
+                if (properties[keys[i]] != null && keys[i] !== "__proto__")
                     this[keys[i]] = properties[keys[i]];
     }
 
@@ -62,11 +62,15 @@ $root.TypeUrlTest = (function() {
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    TypeUrlTest.encode = function encode(message, writer) {
+    TypeUrlTest.encode = function encode(message, writer, q) {
         if (!writer)
             writer = $Writer.create();
+        if (q === undefined)
+            q = 0;
+        if (q > $util.recursionLimit)
+            throw Error("max depth exceeded");
         if (message.nested != null && Object.hasOwnProperty.call(message, "nested"))
-            $root.TypeUrlTest.Nested.encode(message.nested, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+            $root.TypeUrlTest.Nested.encode(message.nested, writer.uint32(/* id 1, wireType 2 =*/10).fork(), q + 1).ldelim();
         return writer;
     };
 
@@ -80,7 +84,7 @@ $root.TypeUrlTest = (function() {
      * @returns {$protobuf.Writer} Writer
      */
     TypeUrlTest.encodeDelimited = function encodeDelimited(message, writer) {
-        return this.encode(message, writer).ldelim();
+        return this.encode(message, writer && writer.len ? writer.fork() : writer).ldelim();
     };
 
     /**
@@ -94,20 +98,42 @@ $root.TypeUrlTest = (function() {
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    TypeUrlTest.decode = function decode(reader, length) {
+    TypeUrlTest.decode = function decode(reader, length, error, long) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.TypeUrlTest();
+        if (long === undefined)
+            long = 0;
+        if (long > $Reader.recursionLimit)
+            throw Error("maximum nesting depth exceeded");
+        var end, message;
+        if (length === undefined)
+            end = reader.len;
+        else {
+            end = reader.pos + length;
+            if (end > reader.len)
+                throw RangeError("index out of range");
+            length = reader.len;
+            reader.len = end;
+        }
+        message = new $root.TypeUrlTest();
         while (reader.pos < end) {
             var tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.nested = $root.TypeUrlTest.Nested.decode(reader, reader.uint32());
+            if (tag === error)
                 break;
+            switch (tag >>> 3) {
+            case 1: {
+                    message.nested = $root.TypeUrlTest.Nested.decode(reader, reader.uint32(), undefined, long + 1);
+                    break;
+                }
             default:
-                reader.skipType(tag & 7);
+                reader.skipType(tag & 7, long);
                 break;
             }
+        }
+        if (length !== undefined) {
+            if (reader.pos !== end)
+                throw RangeError("index out of range");
+            reader.len = length;
         }
         return message;
     };
@@ -136,11 +162,15 @@ $root.TypeUrlTest = (function() {
      * @param {Object.<string,*>} message Plain object to verify
      * @returns {string|null} `null` if valid, otherwise the reason why it is not
      */
-    TypeUrlTest.verify = function verify(message) {
+    TypeUrlTest.verify = function verify(message, long) {
         if (typeof message !== "object" || message === null)
             return "object expected";
-        if (message.nested != null && message.hasOwnProperty("nested")) {
-            var error = $root.TypeUrlTest.Nested.verify(message.nested);
+        if (long === undefined)
+            long = 0;
+        if (long > $util.recursionLimit)
+            return "maximum nesting depth exceeded";
+        if (message.nested != null && Object.hasOwnProperty.call(message, "nested")) {
+            var error = $root.TypeUrlTest.Nested.verify(message.nested, long + 1);
             if (error)
                 return "nested." + error;
         }
@@ -155,14 +185,20 @@ $root.TypeUrlTest = (function() {
      * @param {Object.<string,*>} object Plain object
      * @returns {TypeUrlTest} TypeUrlTest
      */
-    TypeUrlTest.fromObject = function fromObject(object) {
+    TypeUrlTest.fromObject = function fromObject(object, long) {
         if (object instanceof $root.TypeUrlTest)
             return object;
+        if (!$util.isObject(object))
+            throw TypeError(".TypeUrlTest: object expected");
+        if (long === undefined)
+            long = 0;
+        if (long > $util.recursionLimit)
+            throw Error("maximum nesting depth exceeded");
         var message = new $root.TypeUrlTest();
         if (object.nested != null) {
-            if (typeof object.nested !== "object")
+            if (!$util.isObject(object.nested))
                 throw TypeError(".TypeUrlTest.nested: object expected");
-            message.nested = $root.TypeUrlTest.Nested.fromObject(object.nested);
+            message.nested = $root.TypeUrlTest.Nested.fromObject(object.nested, long + 1);
         }
         return message;
     };
@@ -176,14 +212,18 @@ $root.TypeUrlTest = (function() {
      * @param {$protobuf.IConversionOptions} [options] Conversion options
      * @returns {Object.<string,*>} Plain object
      */
-    TypeUrlTest.toObject = function toObject(message, options) {
+    TypeUrlTest.toObject = function toObject(message, options, q) {
         if (!options)
             options = {};
+        if (q === undefined)
+            q = 0;
+        if (q > $util.recursionLimit)
+            throw Error("max depth exceeded");
         var object = {};
         if (options.defaults)
             object.nested = null;
-        if (message.nested != null && message.hasOwnProperty("nested"))
-            object.nested = $root.TypeUrlTest.Nested.toObject(message.nested, options);
+        if (message.nested != null && Object.hasOwnProperty.call(message, "nested"))
+            object.nested = $root.TypeUrlTest.Nested.toObject(message.nested, options, q + 1);
         return object;
     };
 
@@ -233,7 +273,7 @@ $root.TypeUrlTest = (function() {
         function Nested(properties) {
             if (properties)
                 for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
+                    if (properties[keys[i]] != null && keys[i] !== "__proto__")
                         this[keys[i]] = properties[keys[i]];
         }
 
@@ -266,9 +306,13 @@ $root.TypeUrlTest = (function() {
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        Nested.encode = function encode(message, writer) {
+        Nested.encode = function encode(message, writer, q) {
             if (!writer)
                 writer = $Writer.create();
+            if (q === undefined)
+                q = 0;
+            if (q > $util.recursionLimit)
+                throw Error("max depth exceeded");
             if (message.a != null && Object.hasOwnProperty.call(message, "a"))
                 writer.uint32(/* id 1, wireType 2 =*/10).string(message.a);
             return writer;
@@ -284,7 +328,7 @@ $root.TypeUrlTest = (function() {
          * @returns {$protobuf.Writer} Writer
          */
         Nested.encodeDelimited = function encodeDelimited(message, writer) {
-            return this.encode(message, writer).ldelim();
+            return this.encode(message, writer && writer.len ? writer.fork() : writer).ldelim();
         };
 
         /**
@@ -298,20 +342,42 @@ $root.TypeUrlTest = (function() {
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        Nested.decode = function decode(reader, length) {
+        Nested.decode = function decode(reader, length, error, long) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
-            var end = length === undefined ? reader.len : reader.pos + length, message = new $root.TypeUrlTest.Nested();
+            if (long === undefined)
+                long = 0;
+            if (long > $Reader.recursionLimit)
+                throw Error("maximum nesting depth exceeded");
+            var end, message;
+            if (length === undefined)
+                end = reader.len;
+            else {
+                end = reader.pos + length;
+                if (end > reader.len)
+                    throw RangeError("index out of range");
+                length = reader.len;
+                reader.len = end;
+            }
+            message = new $root.TypeUrlTest.Nested();
             while (reader.pos < end) {
                 var tag = reader.uint32();
-                switch (tag >>> 3) {
-                case 1:
-                    message.a = reader.string();
+                if (tag === error)
                     break;
+                switch (tag >>> 3) {
+                case 1: {
+                        message.a = reader.string();
+                        break;
+                    }
                 default:
-                    reader.skipType(tag & 7);
+                    reader.skipType(tag & 7, long);
                     break;
                 }
+            }
+            if (length !== undefined) {
+                if (reader.pos !== end)
+                    throw RangeError("index out of range");
+                reader.len = length;
             }
             return message;
         };
@@ -340,10 +406,14 @@ $root.TypeUrlTest = (function() {
          * @param {Object.<string,*>} message Plain object to verify
          * @returns {string|null} `null` if valid, otherwise the reason why it is not
          */
-        Nested.verify = function verify(message) {
+        Nested.verify = function verify(message, long) {
             if (typeof message !== "object" || message === null)
                 return "object expected";
-            if (message.a != null && message.hasOwnProperty("a"))
+            if (long === undefined)
+                long = 0;
+            if (long > $util.recursionLimit)
+                return "maximum nesting depth exceeded";
+            if (message.a != null && Object.hasOwnProperty.call(message, "a"))
                 if (!$util.isString(message.a))
                     return "a: string expected";
             return null;
@@ -357,9 +427,15 @@ $root.TypeUrlTest = (function() {
          * @param {Object.<string,*>} object Plain object
          * @returns {TypeUrlTest.Nested} Nested
          */
-        Nested.fromObject = function fromObject(object) {
+        Nested.fromObject = function fromObject(object, long) {
             if (object instanceof $root.TypeUrlTest.Nested)
                 return object;
+            if (!$util.isObject(object))
+                throw TypeError(".TypeUrlTest.Nested: object expected");
+            if (long === undefined)
+                long = 0;
+            if (long > $util.recursionLimit)
+                throw Error("maximum nesting depth exceeded");
             var message = new $root.TypeUrlTest.Nested();
             if (object.a != null)
                 message.a = String(object.a);
@@ -375,13 +451,17 @@ $root.TypeUrlTest = (function() {
          * @param {$protobuf.IConversionOptions} [options] Conversion options
          * @returns {Object.<string,*>} Plain object
          */
-        Nested.toObject = function toObject(message, options) {
+        Nested.toObject = function toObject(message, options, q) {
             if (!options)
                 options = {};
+            if (q === undefined)
+                q = 0;
+            if (q > $util.recursionLimit)
+                throw Error("max depth exceeded");
             var object = {};
             if (options.defaults)
                 object.a = "";
-            if (message.a != null && message.hasOwnProperty("a"))
+            if (message.a != null && Object.hasOwnProperty.call(message, "a"))
                 object.a = message.a;
             return object;
         };

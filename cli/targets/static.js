@@ -41,7 +41,7 @@ function static_target(root, options, callback) {
             }
             push("// Exported root namespace");
         }
-        var rootProp = util.safeProp(config.root || "default");
+        var rootProp = "[" + JSON.stringify(String(config.root || "default")) + "]";
         push((config.es6 ? "const" : "var") + " $root = $protobuf.roots" + rootProp + " || ($protobuf.roots" + rootProp + " = {});");
         buildNamespace(null, root);
         return callback(null, out.join("\n"));
@@ -79,25 +79,36 @@ function pushComment(lines) {
     push(" */");
 }
 
+function objectPath(object) {
+    var parts = [];
+    while (object && object.name !== "") {
+        parts.unshift(escapeName(object.name));
+        object = object.parent;
+    }
+    return parts;
+}
+
 function exportName(object, asInterface) {
     if (asInterface) {
         if (object.__interfaceName)
             return object.__interfaceName;
     } else if (object.__exportName)
         return object.__exportName;
-    var parts = object.fullName.substring(1).split("."),
-        i = 0;
-    while (i < parts.length)
-        parts[i] = escapeName(parts[i++]);
-    if (asInterface)
-        parts[i - 1] = "I" + parts[i - 1];
+    var parts = objectPath(object);
+    if (asInterface && parts.length)
+        parts[parts.length - 1] = "I" + parts[parts.length - 1];
     return object[asInterface ? "__interfaceName" : "__exportName"] = parts.join(".");
 }
 
 function escapeName(name) {
     if (!name)
         return "$root";
-    return util.isReserved(name) ? name + "_" : name;
+    name = name.replace(/\W/g, "");
+    if (!name)
+        return "_";
+    if (/^\d/.test(name))
+        name = "_" + name;
+    return util.patterns.reservedRe.test(name) ? name + "_" : name;
 }
 
 function aOrAn(name) {
@@ -136,7 +147,15 @@ function buildNamespace(ref, ns) {
         push((config.es6 ? "const" : "var") + " " + escapeName(ns.name) + " = {};");
     }
 
+    var seenNames = new Set();
     ns.nestedArray.forEach(function(nested) {
+        // Only check names of elements that are emitted below
+        if (!(nested instanceof Enum || nested instanceof Namespace) || nested instanceof Service && !config.service)
+            return;
+        var name = escapeName(nested.name);
+        if (seenNames.has(name))
+            throw Error("duplicate generated name '" + name + "'");
+        seenNames.add(name);
         if (nested instanceof Enum)
             buildEnum(ns.name, nested);
         else if (nested instanceof Namespace)
@@ -226,8 +245,27 @@ var renameVars = {
 function buildFunction(type, functionName, gen, scope) {
     var code = gen.toString(functionName)
         .replace(/((?!\.)types\[\d+])(\.values)/g, "$1"); // enums: use types[N] instead of reflected types[N].values
-
     var ast = espree.parse(code);
+
+    function rootMemberRef(object) {
+        var ref = {
+            "type": "Identifier",
+            "name": "$root"
+        };
+        var parts = objectPath(object);
+        for (var i = 0; i < parts.length; ++i)
+            ref = {
+                "type": "MemberExpression",
+                "computed": false,
+                "object": ref,
+                "property": {
+                    "type": "Identifier",
+                    "name": parts[i]
+                }
+            };
+        return ref;
+    }
+
     /* eslint-disable no-extra-parens */
     estraverse.replace(ast, {
         enter: function(node, parent) {
@@ -249,20 +287,14 @@ function buildFunction(type, functionName, gen, scope) {
              && node.object.type === "ThisExpression"
              && node.property.type === "Identifier" && node.property.name === "ctor"
             )
-                return {
-                    "type": "Identifier",
-                    "name": "$root" + type.fullName
-                };
+                return rootMemberRef(type);
             // replace types[N] with the field's actual type
             if (
                 node.type === "MemberExpression"
              && node.object.type === "Identifier" && node.object.name === "types"
              && node.property.type === "Literal"
             )
-                return {
-                    "type": "Identifier",
-                    "name": "$root" + type.fieldsArray[node.property.value].resolvedType.fullName
-                };
+                return rootMemberRef(type.fieldsArray[node.property.value].resolvedType);
             return undefined;
         }
     });
@@ -362,71 +394,11 @@ function toJsType(field, parentIsInterface = false) {
     return type;
 }
 
-function syntaxForType(type) {
-
-    var syntax = null;
-    var namespace = type;
-
-    while (syntax === null && namespace !== null) {
-        if (namespace.options != null && "syntax" in namespace.options) {
-            syntax = namespace.options["syntax"];
-        }
-        else {
-            namespace = namespace.parent;
-        }
-    }
-
-    return syntax !== null ? syntax : "proto2";
-}
-
-function isExplicitPresence(field, syntax) {
-
-    // In proto3, optional fields are explicit
-    if (syntax === "proto3") {
-        return field.options != null && field.options["proto3_optional"] === true;
-    }
-
-    // In proto2, fields are explicitly optional if they are not part of a map, array or oneOf group
-    if (syntax === "proto2") {
-        return field.optional && !(field.partOf || field.repeated || field.map);
-    }
-
-    throw new Error("Unknown proto syntax: [" + syntax + "]");
-}
-
-function isImplicitPresence(field, syntax) {
-
-    // In proto3, everything not marked optional has implicit presence (including maps and repeated fields)
-    if (syntax === "proto3") {
-        return field.options == null || field.options["proto3_optional"] !== true;
-    }
-
-    // In proto2, nothing has implicit presence
-    if (syntax === "proto2") {
-        return false;
-    }
-
-    throw new Error("Unknown proto syntax: [" + syntax + "]");
-}
-
-function isOptionalOneOf(oneof, syntax) {
-
-    if (syntax === "proto2") {
-        return false;
-    }
-
-    if (oneof.fieldsArray == null || oneof.fieldsArray.length !== 1) {
-        return false;
-    }
-
-    var field = oneof.fieldsArray[0];
-
-    return field.options != null && field.options["proto3_optional"] === true;
+function isNullable(field) {
+    return field.hasPresence && !field.required;
 }
 
 function buildType(ref, type) {
-
-    var syntax = syntaxForType(type);
 
     if (config.comments) {
         var typeDef = [
@@ -443,13 +415,15 @@ function buildType(ref, type) {
                 // With semantic nulls, only explicit optional fields and one-of members can be set to null
                 // Implicit fields (proto3), maps and lists can be omitted, but if specified must be non-null
                 // Implicit fields will take their default value when the message is constructed
-                if (isExplicitPresence(field, syntax) || field.partOf) {
-                    jsType = jsType + "|null|undefined";
-                    nullable = true;
-                }
-                else if (isImplicitPresence(field, syntax) || field.repeated || field.map) {
-                    jsType = jsType + "|undefined";
-                    nullable = true;
+                if (field.optional) {
+                    if (isNullable(field)) {
+                        jsType = jsType + "|null|undefined";
+                        nullable = true;
+                    }
+                    else {
+                        jsType = jsType + "|undefined";
+                        nullable = true;
+                    }
                 }
             }
             else {
@@ -490,7 +464,7 @@ function buildType(ref, type) {
                 // With semantic nulls, fields are nullable if they are explicitly optional or part of a one-of
                 // Maps, repeated values and fields with implicit defaults are never null after construction
                 // Members are never undefined, at a minimum they are initialized to null
-                if (isExplicitPresence(field, syntax) || field.partOf) {
+                if (isNullable(field)) {
                     jsType = jsType + "|null";
                 }
             }
@@ -514,7 +488,7 @@ function buildType(ref, type) {
         // With semantic nulls, only explict optional fields and one-of members are null by default
         // Otherwise use field.optional, which doesn't consider proto3, maps, repeated fields etc.
         var nullDefault = config["null-semantics"]
-            ? isExplicitPresence(field, syntax)
+            ? isNullable(field)
             : field.optional && config["null-defaults"];
         if (field.repeated)
             push(escapeName(type.name) + ".prototype" + prop + " = $util.emptyArray;"); // overwritten in constructor
@@ -527,7 +501,7 @@ function buildType(ref, type) {
                     + JSON.stringify(field.typeDefault.low) + ","
                     + JSON.stringify(field.typeDefault.high) + ","
                     + JSON.stringify(field.typeDefault.unsigned)
-                + ") : " + field.typeDefault.toNumber(field.type.charAt(0) === "u") + ";");
+                + ") : " + field.typeDefault.toNumber(field.type === "uint64" || field.type === "fixed64") + ";");
         else if (field.bytes) {
             push(escapeName(type.name) + ".prototype" + prop + " = $util.newBuffer(" + JSON.stringify(Array.prototype.slice.call(field.typeDefault)) + ");");
         } else
@@ -546,7 +520,7 @@ function buildType(ref, type) {
         }
         oneof.resolve();
         push("");
-        if (isOptionalOneOf(oneof, syntax)) {
+        if (oneof.isProto3Optional) {
             push("// Virtual OneOf for proto3 optional field");
         }
         else {
@@ -608,7 +582,7 @@ function buildType(ref, type) {
             ]);
             push(escapeName(type.name) + ".encodeDelimited = function encodeDelimited(message, writer) {");
             ++indent;
-            push("return this.encode(message, writer).ldelim();");
+            push("return this.encode(message, writer && writer.len ? writer.fork() : writer).ldelim();");
             --indent;
             push("};");
         }
@@ -795,7 +769,7 @@ function buildService(ref, service) {
         ]);
         push("Object.defineProperty(" + escapeName(service.name) + ".prototype" + util.safeProp(lcName) + " = function " + escapeName(lcName) + "(request, callback) {");
             ++indent;
-            push("return this.rpcCall(" + escapeName(lcName) + ", $root." + exportName(method.resolvedRequestType) + ", $root." + exportName(method.resolvedResponseType) + ", request, callback);");
+            push("return $protobuf.rpc.Service.prototype.rpcCall.call(this, " + escapeName(lcName) + ", $root." + exportName(method.resolvedRequestType) + ", $root." + exportName(method.resolvedResponseType) + ", request, callback);");
             --indent;
         push("}, \"name\", { value: " + JSON.stringify(method.name) + " });");
         if (config.comments)

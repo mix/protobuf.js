@@ -7,7 +7,7 @@ var $protobuf = require("../../minimal");
 var $Reader = $protobuf.Reader, $Writer = $protobuf.Writer, $util = $protobuf.util;
 
 // Exported root namespace
-var $root = $protobuf.roots.test_convert || ($protobuf.roots.test_convert = {});
+var $root = $protobuf.roots["test_convert"] || ($protobuf.roots["test_convert"] = {});
 
 $root.Message = (function() {
 
@@ -42,7 +42,7 @@ $root.Message = (function() {
         this.int64Map = {};
         if (properties)
             for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
+                if (properties[keys[i]] != null && keys[i] !== "__proto__")
                     this[keys[i]] = properties[keys[i]];
     }
 
@@ -139,9 +139,13 @@ $root.Message = (function() {
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    Message.encode = function encode(message, writer) {
+    Message.encode = function encode(message, writer, q) {
         if (!writer)
             writer = $Writer.create();
+        if (q === undefined)
+            q = 0;
+        if (q > $util.recursionLimit)
+            throw Error("max depth exceeded");
         if (message.stringVal != null && Object.hasOwnProperty.call(message, "stringVal"))
             writer.uint32(/* id 1, wireType 2 =*/10).string(message.stringVal);
         if (message.stringRepeated != null && message.stringRepeated.length)
@@ -184,7 +188,7 @@ $root.Message = (function() {
      * @returns {$protobuf.Writer} Writer
      */
     Message.encodeDelimited = function encodeDelimited(message, writer) {
-        return this.encode(message, writer).ldelim();
+        return this.encode(message, writer && writer.len ? writer.fork() : writer).ldelim();
     };
 
     /**
@@ -198,81 +202,131 @@ $root.Message = (function() {
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    Message.decode = function decode(reader, length) {
+    Message.decode = function decode(reader, length, error, long) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.Message(), key, value;
+        if (long === undefined)
+            long = 0;
+        if (long > $Reader.recursionLimit)
+            throw Error("maximum nesting depth exceeded");
+        var end, message, key, value;
+        if (length === undefined)
+            end = reader.len;
+        else {
+            end = reader.pos + length;
+            if (end > reader.len)
+                throw RangeError("index out of range");
+            length = reader.len;
+            reader.len = end;
+        }
+        message = new $root.Message();
         while (reader.pos < end) {
             var tag = reader.uint32();
+            if (tag === error)
+                break;
             switch (tag >>> 3) {
-            case 1:
-                message.stringVal = reader.string();
-                break;
-            case 2:
-                if (!(message.stringRepeated && message.stringRepeated.length))
-                    message.stringRepeated = [];
-                message.stringRepeated.push(reader.string());
-                break;
-            case 3:
-                message.uint64Val = reader.uint64();
-                break;
-            case 4:
-                if (!(message.uint64Repeated && message.uint64Repeated.length))
-                    message.uint64Repeated = [];
-                if ((tag & 7) === 2) {
-                    var end2 = reader.uint32() + reader.pos;
-                    while (reader.pos < end2)
-                        message.uint64Repeated.push(reader.uint64());
-                } else
-                    message.uint64Repeated.push(reader.uint64());
-                break;
-            case 5:
-                message.bytesVal = reader.bytes();
-                break;
-            case 6:
-                if (!(message.bytesRepeated && message.bytesRepeated.length))
-                    message.bytesRepeated = [];
-                message.bytesRepeated.push(reader.bytes());
-                break;
-            case 7:
-                message.enumVal = reader.int32();
-                break;
-            case 8:
-                if (!(message.enumRepeated && message.enumRepeated.length))
-                    message.enumRepeated = [];
-                if ((tag & 7) === 2) {
-                    var end2 = reader.uint32() + reader.pos;
-                    while (reader.pos < end2)
-                        message.enumRepeated.push(reader.int32());
-                } else
-                    message.enumRepeated.push(reader.int32());
-                break;
-            case 9:
-                if (message.int64Map === $util.emptyObject)
-                    message.int64Map = {};
-                var end2 = reader.uint32() + reader.pos;
-                key = "";
-                value = 0;
-                while (reader.pos < end2) {
-                    var tag2 = reader.uint32();
-                    switch (tag2 >>> 3) {
-                    case 1:
-                        key = reader.string();
-                        break;
-                    case 2:
-                        value = reader.int64();
-                        break;
-                    default:
-                        reader.skipType(tag2 & 7);
-                        break;
-                    }
+            case 1: {
+                    message.stringVal = reader.string();
+                    break;
                 }
-                message.int64Map[key] = value;
-                break;
+            case 2: {
+                    if (!(message.stringRepeated && message.stringRepeated.length))
+                        message.stringRepeated = [];
+                    message.stringRepeated.push(reader.string());
+                    break;
+                }
+            case 3: {
+                    message.uint64Val = reader.uint64();
+                    break;
+                }
+            case 4: {
+                    if (!(message.uint64Repeated && message.uint64Repeated.length))
+                        message.uint64Repeated = [];
+                    if ((tag & 7) === 2) {
+                        var end2 = reader.uint32() + reader.pos;
+                        if (end2 > reader.len)
+                            throw RangeError("index out of range");
+                        reader.len = end2;
+                        while (reader.pos < end2)
+                            message.uint64Repeated.push(reader.uint64());
+                        if (reader.pos !== end2)
+                            throw RangeError("index out of range");
+                        reader.len = end;
+                    } else
+                        message.uint64Repeated.push(reader.uint64());
+                    break;
+                }
+            case 5: {
+                    message.bytesVal = reader.bytes();
+                    break;
+                }
+            case 6: {
+                    if (!(message.bytesRepeated && message.bytesRepeated.length))
+                        message.bytesRepeated = [];
+                    message.bytesRepeated.push(reader.bytes());
+                    break;
+                }
+            case 7: {
+                    message.enumVal = reader.int32();
+                    break;
+                }
+            case 8: {
+                    if (!(message.enumRepeated && message.enumRepeated.length))
+                        message.enumRepeated = [];
+                    if ((tag & 7) === 2) {
+                        var end2 = reader.uint32() + reader.pos;
+                        if (end2 > reader.len)
+                            throw RangeError("index out of range");
+                        reader.len = end2;
+                        while (reader.pos < end2)
+                            message.enumRepeated.push(reader.int32());
+                        if (reader.pos !== end2)
+                            throw RangeError("index out of range");
+                        reader.len = end;
+                    } else
+                        message.enumRepeated.push(reader.int32());
+                    break;
+                }
+            case 9: {
+                    if (message.int64Map === $util.emptyObject)
+                        message.int64Map = {};
+                    var end2 = reader.uint32() + reader.pos;
+                    if (end2 > reader.len)
+                        throw RangeError("index out of range");
+                    reader.len = end2;
+                    key = "";
+                    value = 0;
+                    while (reader.pos < end2) {
+                        var tag2 = reader.uint32();
+                        switch (tag2 >>> 3) {
+                        case 1:
+                            key = reader.string();
+                            break;
+                        case 2:
+                            value = reader.int64();
+                            break;
+                        default:
+                            reader.skipType(tag2 & 7, long);
+                            break;
+                        }
+                    }
+                    if (reader.pos !== end2)
+                        throw RangeError("index out of range");
+                    reader.len = end;
+                    if (key === "__proto__")
+                        $util.makeProp(message.int64Map, key);
+                    message.int64Map[key] = value;
+                    break;
+                }
             default:
-                reader.skipType(tag & 7);
+                reader.skipType(tag & 7, long);
                 break;
             }
+        }
+        if (length !== undefined) {
+            if (reader.pos !== end)
+                throw RangeError("index out of range");
+            reader.len = length;
         }
         return message;
     };
@@ -301,40 +355,44 @@ $root.Message = (function() {
      * @param {Object.<string,*>} message Plain object to verify
      * @returns {string|null} `null` if valid, otherwise the reason why it is not
      */
-    Message.verify = function verify(message) {
+    Message.verify = function verify(message, long) {
         if (typeof message !== "object" || message === null)
             return "object expected";
-        if (message.stringVal != null && message.hasOwnProperty("stringVal"))
+        if (long === undefined)
+            long = 0;
+        if (long > $util.recursionLimit)
+            return "maximum nesting depth exceeded";
+        if (message.stringVal != null && Object.hasOwnProperty.call(message, "stringVal"))
             if (!$util.isString(message.stringVal))
                 return "stringVal: string expected";
-        if (message.stringRepeated != null && message.hasOwnProperty("stringRepeated")) {
+        if (message.stringRepeated != null && Object.hasOwnProperty.call(message, "stringRepeated")) {
             if (!Array.isArray(message.stringRepeated))
                 return "stringRepeated: array expected";
             for (var i = 0; i < message.stringRepeated.length; ++i)
                 if (!$util.isString(message.stringRepeated[i]))
                     return "stringRepeated: string[] expected";
         }
-        if (message.uint64Val != null && message.hasOwnProperty("uint64Val"))
+        if (message.uint64Val != null && Object.hasOwnProperty.call(message, "uint64Val"))
             if (!$util.isInteger(message.uint64Val) && !(message.uint64Val && $util.isInteger(message.uint64Val.low) && $util.isInteger(message.uint64Val.high)))
                 return "uint64Val: integer|Long expected";
-        if (message.uint64Repeated != null && message.hasOwnProperty("uint64Repeated")) {
+        if (message.uint64Repeated != null && Object.hasOwnProperty.call(message, "uint64Repeated")) {
             if (!Array.isArray(message.uint64Repeated))
                 return "uint64Repeated: array expected";
             for (var i = 0; i < message.uint64Repeated.length; ++i)
                 if (!$util.isInteger(message.uint64Repeated[i]) && !(message.uint64Repeated[i] && $util.isInteger(message.uint64Repeated[i].low) && $util.isInteger(message.uint64Repeated[i].high)))
                     return "uint64Repeated: integer|Long[] expected";
         }
-        if (message.bytesVal != null && message.hasOwnProperty("bytesVal"))
+        if (message.bytesVal != null && Object.hasOwnProperty.call(message, "bytesVal"))
             if (!(message.bytesVal && typeof message.bytesVal.length === "number" || $util.isString(message.bytesVal)))
                 return "bytesVal: buffer expected";
-        if (message.bytesRepeated != null && message.hasOwnProperty("bytesRepeated")) {
+        if (message.bytesRepeated != null && Object.hasOwnProperty.call(message, "bytesRepeated")) {
             if (!Array.isArray(message.bytesRepeated))
                 return "bytesRepeated: array expected";
             for (var i = 0; i < message.bytesRepeated.length; ++i)
                 if (!(message.bytesRepeated[i] && typeof message.bytesRepeated[i].length === "number" || $util.isString(message.bytesRepeated[i])))
                     return "bytesRepeated: buffer[] expected";
         }
-        if (message.enumVal != null && message.hasOwnProperty("enumVal"))
+        if (message.enumVal != null && Object.hasOwnProperty.call(message, "enumVal"))
             switch (message.enumVal) {
             default:
                 return "enumVal: enum value expected";
@@ -342,7 +400,7 @@ $root.Message = (function() {
             case 2:
                 break;
             }
-        if (message.enumRepeated != null && message.hasOwnProperty("enumRepeated")) {
+        if (message.enumRepeated != null && Object.hasOwnProperty.call(message, "enumRepeated")) {
             if (!Array.isArray(message.enumRepeated))
                 return "enumRepeated: array expected";
             for (var i = 0; i < message.enumRepeated.length; ++i)
@@ -354,7 +412,7 @@ $root.Message = (function() {
                     break;
                 }
         }
-        if (message.int64Map != null && message.hasOwnProperty("int64Map")) {
+        if (message.int64Map != null && Object.hasOwnProperty.call(message, "int64Map")) {
             if (!$util.isObject(message.int64Map))
                 return "int64Map: object expected";
             var key = Object.keys(message.int64Map);
@@ -373,9 +431,15 @@ $root.Message = (function() {
      * @param {Object.<string,*>} object Plain object
      * @returns {Message} Message
      */
-    Message.fromObject = function fromObject(object) {
+    Message.fromObject = function fromObject(object, long) {
         if (object instanceof $root.Message)
             return object;
+        if (!$util.isObject(object))
+            throw TypeError(".Message: object expected");
+        if (long === undefined)
+            long = 0;
+        if (long > $util.recursionLimit)
+            throw Error("maximum nesting depth exceeded");
         var message = new $root.Message();
         if (object.stringVal != null)
             message.stringVal = String(object.stringVal);
@@ -388,7 +452,7 @@ $root.Message = (function() {
         }
         if (object.uint64Val != null)
             if ($util.Long)
-                (message.uint64Val = $util.Long.fromValue(object.uint64Val)).unsigned = true;
+                message.uint64Val = $util.Long.fromValue(object.uint64Val, true);
             else if (typeof object.uint64Val === "string")
                 message.uint64Val = parseInt(object.uint64Val, 10);
             else if (typeof object.uint64Val === "number")
@@ -401,7 +465,7 @@ $root.Message = (function() {
             message.uint64Repeated = [];
             for (var i = 0; i < object.uint64Repeated.length; ++i)
                 if ($util.Long)
-                    (message.uint64Repeated[i] = $util.Long.fromValue(object.uint64Repeated[i])).unsigned = true;
+                    message.uint64Repeated[i] = $util.Long.fromValue(object.uint64Repeated[i], true);
                 else if (typeof object.uint64Repeated[i] === "string")
                     message.uint64Repeated[i] = parseInt(object.uint64Repeated[i], 10);
                 else if (typeof object.uint64Repeated[i] === "number")
@@ -425,6 +489,12 @@ $root.Message = (function() {
                     message.bytesRepeated[i] = object.bytesRepeated[i];
         }
         switch (object.enumVal) {
+        default:
+            if (typeof object.enumVal === "number") {
+                message.enumVal = object.enumVal;
+                break;
+            }
+            break;
         case "ONE":
         case 1:
             message.enumVal = 1;
@@ -441,6 +511,10 @@ $root.Message = (function() {
             for (var i = 0; i < object.enumRepeated.length; ++i)
                 switch (object.enumRepeated[i]) {
                 default:
+                    if (typeof object.enumRepeated[i] === "number") {
+                        message.enumRepeated[i] = object.enumRepeated[i];
+                        break;
+                    }
                 case "ONE":
                 case 1:
                     message.enumRepeated[i] = 1;
@@ -452,18 +526,21 @@ $root.Message = (function() {
                 }
         }
         if (object.int64Map) {
-            if (typeof object.int64Map !== "object")
+            if (!$util.isObject(object.int64Map))
                 throw TypeError(".Message.int64Map: object expected");
             message.int64Map = {};
-            for (var keys = Object.keys(object.int64Map), i = 0; i < keys.length; ++i)
+            for (var keys = Object.keys(object.int64Map), i = 0; i < keys.length; ++i) {
+                if (keys[i] === "__proto__")
+                    $util.makeProp(message.int64Map, keys[i]);
                 if ($util.Long)
-                    (message.int64Map[keys[i]] = $util.Long.fromValue(object.int64Map[keys[i]])).unsigned = false;
+                    message.int64Map[keys[i]] = $util.Long.fromValue(object.int64Map[keys[i]], false);
                 else if (typeof object.int64Map[keys[i]] === "string")
                     message.int64Map[keys[i]] = parseInt(object.int64Map[keys[i]], 10);
                 else if (typeof object.int64Map[keys[i]] === "number")
                     message.int64Map[keys[i]] = object.int64Map[keys[i]];
                 else if (typeof object.int64Map[keys[i]] === "object")
                     message.int64Map[keys[i]] = new $util.LongBits(object.int64Map[keys[i]].low >>> 0, object.int64Map[keys[i]].high >>> 0).toNumber();
+            }
         }
         return message;
     };
@@ -477,9 +554,13 @@ $root.Message = (function() {
      * @param {$protobuf.IConversionOptions} [options] Conversion options
      * @returns {Object.<string,*>} Plain object
      */
-    Message.toObject = function toObject(message, options) {
+    Message.toObject = function toObject(message, options, q) {
         if (!options)
             options = {};
+        if (q === undefined)
+            q = 0;
+        if (q > $util.recursionLimit)
+            throw Error("max depth exceeded");
         var object = {};
         if (options.arrays || options.defaults) {
             object.stringRepeated = [];
@@ -493,9 +574,9 @@ $root.Message = (function() {
             object.stringVal = "";
             if ($util.Long) {
                 var long = new $util.Long(0, 0, true);
-                object.uint64Val = options.longs === String ? long.toString() : options.longs === Number ? long.toNumber() : long;
+                object.uint64Val = options.longs === String ? long.toString() : options.longs === Number ? long.toNumber() : typeof BigInt !== "undefined" && options.longs === BigInt ? long.toBigInt() : long;
             } else
-                object.uint64Val = options.longs === String ? "0" : 0;
+                object.uint64Val = options.longs === String ? "0" : typeof BigInt !== "undefined" && options.longs === BigInt ? BigInt("0") : 0;
             if (options.bytes === String)
                 object.bytesVal = "";
             else {
@@ -505,48 +586,57 @@ $root.Message = (function() {
             }
             object.enumVal = options.enums === String ? "ONE" : 1;
         }
-        if (message.stringVal != null && message.hasOwnProperty("stringVal"))
+        if (message.stringVal != null && Object.hasOwnProperty.call(message, "stringVal"))
             object.stringVal = message.stringVal;
         if (message.stringRepeated && message.stringRepeated.length) {
             object.stringRepeated = [];
             for (var j = 0; j < message.stringRepeated.length; ++j)
                 object.stringRepeated[j] = message.stringRepeated[j];
         }
-        if (message.uint64Val != null && message.hasOwnProperty("uint64Val"))
-            if (typeof message.uint64Val === "number")
+        if (message.uint64Val != null && Object.hasOwnProperty.call(message, "uint64Val"))
+            if (typeof BigInt !== "undefined" && options.longs === BigInt)
+                object.uint64Val = typeof message.uint64Val === "number" ? BigInt(message.uint64Val) : $util.Long.fromBits(message.uint64Val.low >>> 0, message.uint64Val.high >>> 0, true).toBigInt();
+            else if (typeof message.uint64Val === "number")
                 object.uint64Val = options.longs === String ? String(message.uint64Val) : message.uint64Val;
             else
                 object.uint64Val = options.longs === String ? $util.Long.prototype.toString.call(message.uint64Val) : options.longs === Number ? new $util.LongBits(message.uint64Val.low >>> 0, message.uint64Val.high >>> 0).toNumber(true) : message.uint64Val;
         if (message.uint64Repeated && message.uint64Repeated.length) {
             object.uint64Repeated = [];
             for (var j = 0; j < message.uint64Repeated.length; ++j)
-                if (typeof message.uint64Repeated[j] === "number")
+                if (typeof BigInt !== "undefined" && options.longs === BigInt)
+                    object.uint64Repeated[j] = typeof message.uint64Repeated[j] === "number" ? BigInt(message.uint64Repeated[j]) : $util.Long.fromBits(message.uint64Repeated[j].low >>> 0, message.uint64Repeated[j].high >>> 0, true).toBigInt();
+                else if (typeof message.uint64Repeated[j] === "number")
                     object.uint64Repeated[j] = options.longs === String ? String(message.uint64Repeated[j]) : message.uint64Repeated[j];
                 else
                     object.uint64Repeated[j] = options.longs === String ? $util.Long.prototype.toString.call(message.uint64Repeated[j]) : options.longs === Number ? new $util.LongBits(message.uint64Repeated[j].low >>> 0, message.uint64Repeated[j].high >>> 0).toNumber(true) : message.uint64Repeated[j];
         }
-        if (message.bytesVal != null && message.hasOwnProperty("bytesVal"))
+        if (message.bytesVal != null && Object.hasOwnProperty.call(message, "bytesVal"))
             object.bytesVal = options.bytes === String ? $util.base64.encode(message.bytesVal, 0, message.bytesVal.length) : options.bytes === Array ? Array.prototype.slice.call(message.bytesVal) : message.bytesVal;
         if (message.bytesRepeated && message.bytesRepeated.length) {
             object.bytesRepeated = [];
             for (var j = 0; j < message.bytesRepeated.length; ++j)
                 object.bytesRepeated[j] = options.bytes === String ? $util.base64.encode(message.bytesRepeated[j], 0, message.bytesRepeated[j].length) : options.bytes === Array ? Array.prototype.slice.call(message.bytesRepeated[j]) : message.bytesRepeated[j];
         }
-        if (message.enumVal != null && message.hasOwnProperty("enumVal"))
-            object.enumVal = options.enums === String ? $root.Message.SomeEnum[message.enumVal] : message.enumVal;
+        if (message.enumVal != null && Object.hasOwnProperty.call(message, "enumVal"))
+            object.enumVal = options.enums === String ? $root.Message.SomeEnum[message.enumVal] === undefined ? message.enumVal : $root.Message.SomeEnum[message.enumVal] : message.enumVal;
         if (message.enumRepeated && message.enumRepeated.length) {
             object.enumRepeated = [];
             for (var j = 0; j < message.enumRepeated.length; ++j)
-                object.enumRepeated[j] = options.enums === String ? $root.Message.SomeEnum[message.enumRepeated[j]] : message.enumRepeated[j];
+                object.enumRepeated[j] = options.enums === String ? $root.Message.SomeEnum[message.enumRepeated[j]] === undefined ? message.enumRepeated[j] : $root.Message.SomeEnum[message.enumRepeated[j]] : message.enumRepeated[j];
         }
         var keys2;
         if (message.int64Map && (keys2 = Object.keys(message.int64Map)).length) {
             object.int64Map = {};
-            for (var j = 0; j < keys2.length; ++j)
-                if (typeof message.int64Map[keys2[j]] === "number")
+            for (var j = 0; j < keys2.length; ++j) {
+                if (keys2[j] === "__proto__")
+                    $util.makeProp(object.int64Map, keys2[j]);
+                if (typeof BigInt !== "undefined" && options.longs === BigInt)
+                    object.int64Map[keys2[j]] = typeof message.int64Map[keys2[j]] === "number" ? BigInt(message.int64Map[keys2[j]]) : $util.Long.fromBits(message.int64Map[keys2[j]].low >>> 0, message.int64Map[keys2[j]].high >>> 0, false).toBigInt();
+                else if (typeof message.int64Map[keys2[j]] === "number")
                     object.int64Map[keys2[j]] = options.longs === String ? String(message.int64Map[keys2[j]]) : message.int64Map[keys2[j]];
                 else
                     object.int64Map[keys2[j]] = options.longs === String ? $util.Long.prototype.toString.call(message.int64Map[keys2[j]]) : options.longs === Number ? new $util.LongBits(message.int64Map[keys2[j]].low >>> 0, message.int64Map[keys2[j]].high >>> 0).toNumber() : message.int64Map[keys2[j]];
+            }
         }
         return object;
     };

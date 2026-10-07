@@ -1,5 +1,65 @@
 # Changelog
 
+## [1.3.3](https://github.com/protobufjs/protobuf.js/compare/protobufjs-cli-v1.3.2...protobufjs-cli-v1.3.3) (2026-06-09)
+
+
+### Bug Fixes
+
+* Avoid name collisions in generated code ([#2311](https://github.com/protobufjs/protobuf.js/issues/2311)) ([78a9576](https://github.com/protobufjs/protobuf.js/commit/78a9576269a5b590c54686a8122e78e28135cd50))
+
+## [1.3.2](https://github.com/protobufjs/protobuf.js/compare/protobufjs-cli-v1.3.1...protobufjs-cli-v1.3.2) (2026-05-30)
+
+
+### Bug Fixes
+
+* Backport consistency and correctness fixes ([#2294](https://github.com/protobufjs/protobuf.js/issues/2294)) ([a92f72e](https://github.com/protobufjs/protobuf.js/commit/a92f72e1cb731f06040a7917d3e041666d5f5601))
+
+## [1.3.1](https://github.com/protobufjs/protobuf.js/compare/protobufjs-cli-v1.3.0...protobufjs-cli-v1.3.1) (2026-05-22)
+
+
+### Bug Fixes
+
+* Treat fixed64 as unsigned in converters ([#2266](https://github.com/protobufjs/protobuf.js/issues/2266)) ([479dfdc](https://github.com/protobufjs/protobuf.js/commit/479dfdcc690feb9f71986049d3d38c7a0f979abb))
+
+## [1.3.0](https://github.com/protobufjs/protobuf.js/compare/protobufjs-cli-v1.2.2...protobufjs-cli-v1.3.0) (2026-05-18)
+
+
+### Features
+
+* Support BigInt conversions (7.x) ([#2258](https://github.com/protobufjs/protobuf.js/issues/2258)) ([f769242](https://github.com/protobufjs/protobuf.js/commit/f76924244504b159efe1bb13b154fd17be3c13e7))
+
+## [1.2.2](https://github.com/protobufjs/protobuf.js/compare/protobufjs-cli-v1.2.1...protobufjs-cli-v1.2.2) (2026-04-28)
+
+
+### Bug Fixes
+
+* Update CLI peer dependency (7.x) ([#2189](https://github.com/protobufjs/protobuf.js/issues/2189)) ([a0bf2df](https://github.com/protobufjs/protobuf.js/commit/a0bf2dfdd8a75aa62ce5a1ff47a52b9b8f1ea793))
+
+## [1.2.1](https://github.com/protobufjs/protobuf.js/compare/protobufjs-cli-v1.2.0...protobufjs-cli-v1.2.1) (2026-04-27)
+
+
+### Bug Fixes
+
+* Backport input hardening and CLI fixes to 7.x ([#2173](https://github.com/protobufjs/protobuf.js/issues/2173)) ([75392ea](https://github.com/protobufjs/protobuf.js/commit/75392ea1b78bdc4faba027b5db44ad7c50e9c454))
+
+## [1.2.0](https://github.com/protobufjs/protobuf.js/compare/protobufjs-cli-v1.1.4...protobufjs-cli-v1.2.0) (2025-04-15)
+
+
+### Features
+
+* add Edition 2023 Support ([f04ded3](https://github.com/protobufjs/protobuf.js/commit/f04ded3a03a3ddd383f0228e2fe2627a51f31aa3))
+* add Edition 2023 Support ([a84409b](https://github.com/protobufjs/protobuf.js/commit/a84409b47f9ba0dba56da1af8054fb54f85d85a1))
+* add Edition 2023 Support ([9c5a178](https://github.com/protobufjs/protobuf.js/commit/9c5a178c4b59e0aa65ecac0bd7420171213b2ff9))
+* add Edition 2023 Support ([b2c6867](https://github.com/protobufjs/protobuf.js/commit/b2c686721e3b63d092419fa1cbe58e1deb89534e))
+* add Edition 2023 Support ([60f3e51](https://github.com/protobufjs/protobuf.js/commit/60f3e51087ca2c247473410f39331e1c766aefef))
+* add Edition 2023 Support ([a656361](https://github.com/protobufjs/protobuf.js/commit/a6563617de04d510d6e8865eb6c5067f10247f64))
+* add Edition 2023 Support ([1af8454](https://github.com/protobufjs/protobuf.js/commit/1af8454538b63d58b822ea9d20b935f2ac9f158c))
+* add feature resolution ([a9ffc8a](https://github.com/protobufjs/protobuf.js/commit/a9ffc8a7b593209642fc9d89e884ac6c4e746494))
+* add feature resolution for protobuf editions ([547afa2](https://github.com/protobufjs/protobuf.js/commit/547afa26f76e22e5463a17aec082b0b60cd951d8))
+* api_converters_editions tests added and run successfully" ([b4b5ca4](https://github.com/protobufjs/protobuf.js/commit/b4b5ca468fcde2082d65a72b508f18d07d75245c))
+* increase size of file that protobufjs CLI can process ([00d5f1a](https://github.com/protobufjs/protobuf.js/commit/00d5f1aca4d7959068f52fd11767c21b483e75bb))
+* increase size of file that protobufjs CLI can process ([d36ef0f](https://github.com/protobufjs/protobuf.js/commit/d36ef0faeae9a9ec655747cb650571bdd9b1243b))
+
 ## [1.1.4](https://github.com/protobufjs/protobuf.js/compare/protobufjs-cli-v1.1.3...protobufjs-cli-v1.1.4) (2024-08-22)
 
 

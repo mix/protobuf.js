@@ -1,7 +1,29 @@
 {
-  "bootstrap-sha": "6fc37d9ea3502cdc08ef988494c041aacd0f7e7f",
+  "bootstrap-sha": "75392ea1b78bdc4faba027b5db44ad7c50e9c454",
   "packages": {
     "cli": {},
-    ".": {}
+    ".": {
+      "exclude-paths": [
+        "cli",
+        "lib/aspromise",
+        "lib/base64",
+        "lib/codegen",
+        "lib/eventemitter",
+        "lib/fetch",
+        "lib/float",
+        "lib/path",
+        "lib/pool",
+        "lib/utf8"
+      ]
+    },
+    "lib/aspromise": {},
+    "lib/base64": {},
+    "lib/codegen": {},
+    "lib/eventemitter": {},
+    "lib/fetch": {},
+    "lib/float": {},
+    "lib/path": {},
+    "lib/pool": {},
+    "lib/utf8": {}
   }
 }

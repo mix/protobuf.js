@@ -7,7 +7,7 @@ var $protobuf = require("../../minimal");
 var $Reader = $protobuf.Reader, $Writer = $protobuf.Writer, $util = $protobuf.util;
 
 // Exported root namespace
-var $root = $protobuf.roots.test_comments || ($protobuf.roots.test_comments = {});
+var $root = $protobuf.roots["test_comments"] || ($protobuf.roots["test_comments"] = {});
 
 $root.Test1 = (function() {
 
@@ -34,7 +34,7 @@ $root.Test1 = (function() {
     function Test1(properties) {
         if (properties)
             for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
+                if (properties[keys[i]] != null && keys[i] !== "__proto__")
                     this[keys[i]] = properties[keys[i]];
     }
 
@@ -83,9 +83,13 @@ $root.Test1 = (function() {
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    Test1.encode = function encode(message, writer) {
+    Test1.encode = function encode(message, writer, q) {
         if (!writer)
             writer = $Writer.create();
+        if (q === undefined)
+            q = 0;
+        if (q > $util.recursionLimit)
+            throw Error("max depth exceeded");
         if (message.field1 != null && Object.hasOwnProperty.call(message, "field1"))
             writer.uint32(/* id 1, wireType 2 =*/10).string(message.field1);
         if (message.field2 != null && Object.hasOwnProperty.call(message, "field2"))
@@ -105,7 +109,7 @@ $root.Test1 = (function() {
      * @returns {$protobuf.Writer} Writer
      */
     Test1.encodeDelimited = function encodeDelimited(message, writer) {
-        return this.encode(message, writer).ldelim();
+        return this.encode(message, writer && writer.len ? writer.fork() : writer).ldelim();
     };
 
     /**
@@ -119,26 +123,50 @@ $root.Test1 = (function() {
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    Test1.decode = function decode(reader, length) {
+    Test1.decode = function decode(reader, length, error, long) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.Test1();
+        if (long === undefined)
+            long = 0;
+        if (long > $Reader.recursionLimit)
+            throw Error("maximum nesting depth exceeded");
+        var end, message;
+        if (length === undefined)
+            end = reader.len;
+        else {
+            end = reader.pos + length;
+            if (end > reader.len)
+                throw RangeError("index out of range");
+            length = reader.len;
+            reader.len = end;
+        }
+        message = new $root.Test1();
         while (reader.pos < end) {
             var tag = reader.uint32();
+            if (tag === error)
+                break;
             switch (tag >>> 3) {
-            case 1:
-                message.field1 = reader.string();
-                break;
-            case 2:
-                message.field2 = reader.uint32();
-                break;
-            case 3:
-                message.field3 = reader.bool();
-                break;
+            case 1: {
+                    message.field1 = reader.string();
+                    break;
+                }
+            case 2: {
+                    message.field2 = reader.uint32();
+                    break;
+                }
+            case 3: {
+                    message.field3 = reader.bool();
+                    break;
+                }
             default:
-                reader.skipType(tag & 7);
+                reader.skipType(tag & 7, long);
                 break;
             }
+        }
+        if (length !== undefined) {
+            if (reader.pos !== end)
+                throw RangeError("index out of range");
+            reader.len = length;
         }
         return message;
     };
@@ -167,16 +195,20 @@ $root.Test1 = (function() {
      * @param {Object.<string,*>} message Plain object to verify
      * @returns {string|null} `null` if valid, otherwise the reason why it is not
      */
-    Test1.verify = function verify(message) {
+    Test1.verify = function verify(message, long) {
         if (typeof message !== "object" || message === null)
             return "object expected";
-        if (message.field1 != null && message.hasOwnProperty("field1"))
+        if (long === undefined)
+            long = 0;
+        if (long > $util.recursionLimit)
+            return "maximum nesting depth exceeded";
+        if (message.field1 != null && Object.hasOwnProperty.call(message, "field1"))
             if (!$util.isString(message.field1))
                 return "field1: string expected";
-        if (message.field2 != null && message.hasOwnProperty("field2"))
+        if (message.field2 != null && Object.hasOwnProperty.call(message, "field2"))
             if (!$util.isInteger(message.field2))
                 return "field2: integer expected";
-        if (message.field3 != null && message.hasOwnProperty("field3"))
+        if (message.field3 != null && Object.hasOwnProperty.call(message, "field3"))
             if (typeof message.field3 !== "boolean")
                 return "field3: boolean expected";
         return null;
@@ -190,9 +222,15 @@ $root.Test1 = (function() {
      * @param {Object.<string,*>} object Plain object
      * @returns {Test1} Test1
      */
-    Test1.fromObject = function fromObject(object) {
+    Test1.fromObject = function fromObject(object, long) {
         if (object instanceof $root.Test1)
             return object;
+        if (!$util.isObject(object))
+            throw TypeError(".Test1: object expected");
+        if (long === undefined)
+            long = 0;
+        if (long > $util.recursionLimit)
+            throw Error("maximum nesting depth exceeded");
         var message = new $root.Test1();
         if (object.field1 != null)
             message.field1 = String(object.field1);
@@ -212,20 +250,24 @@ $root.Test1 = (function() {
      * @param {$protobuf.IConversionOptions} [options] Conversion options
      * @returns {Object.<string,*>} Plain object
      */
-    Test1.toObject = function toObject(message, options) {
+    Test1.toObject = function toObject(message, options, q) {
         if (!options)
             options = {};
+        if (q === undefined)
+            q = 0;
+        if (q > $util.recursionLimit)
+            throw Error("max depth exceeded");
         var object = {};
         if (options.defaults) {
             object.field1 = "";
             object.field2 = 0;
             object.field3 = false;
         }
-        if (message.field1 != null && message.hasOwnProperty("field1"))
+        if (message.field1 != null && Object.hasOwnProperty.call(message, "field1"))
             object.field1 = message.field1;
-        if (message.field2 != null && message.hasOwnProperty("field2"))
+        if (message.field2 != null && Object.hasOwnProperty.call(message, "field2"))
             object.field2 = message.field2;
-        if (message.field3 != null && message.hasOwnProperty("field3"))
+        if (message.field3 != null && Object.hasOwnProperty.call(message, "field3"))
             object.field3 = message.field3;
         return object;
     };
@@ -278,7 +320,7 @@ $root.Test2 = (function() {
     function Test2(properties) {
         if (properties)
             for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
+                if (properties[keys[i]] != null && keys[i] !== "__proto__")
                     this[keys[i]] = properties[keys[i]];
     }
 
@@ -303,9 +345,13 @@ $root.Test2 = (function() {
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    Test2.encode = function encode(message, writer) {
+    Test2.encode = function encode(message, writer, q) {
         if (!writer)
             writer = $Writer.create();
+        if (q === undefined)
+            q = 0;
+        if (q > $util.recursionLimit)
+            throw Error("max depth exceeded");
         return writer;
     };
 
@@ -319,7 +365,7 @@ $root.Test2 = (function() {
      * @returns {$protobuf.Writer} Writer
      */
     Test2.encodeDelimited = function encodeDelimited(message, writer) {
-        return this.encode(message, writer).ldelim();
+        return this.encode(message, writer && writer.len ? writer.fork() : writer).ldelim();
     };
 
     /**
@@ -333,17 +379,38 @@ $root.Test2 = (function() {
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    Test2.decode = function decode(reader, length) {
+    Test2.decode = function decode(reader, length, error, long) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.Test2();
+        if (long === undefined)
+            long = 0;
+        if (long > $Reader.recursionLimit)
+            throw Error("maximum nesting depth exceeded");
+        var end, message;
+        if (length === undefined)
+            end = reader.len;
+        else {
+            end = reader.pos + length;
+            if (end > reader.len)
+                throw RangeError("index out of range");
+            length = reader.len;
+            reader.len = end;
+        }
+        message = new $root.Test2();
         while (reader.pos < end) {
             var tag = reader.uint32();
+            if (tag === error)
+                break;
             switch (tag >>> 3) {
             default:
-                reader.skipType(tag & 7);
+                reader.skipType(tag & 7, long);
                 break;
             }
+        }
+        if (length !== undefined) {
+            if (reader.pos !== end)
+                throw RangeError("index out of range");
+            reader.len = length;
         }
         return message;
     };
@@ -372,9 +439,13 @@ $root.Test2 = (function() {
      * @param {Object.<string,*>} message Plain object to verify
      * @returns {string|null} `null` if valid, otherwise the reason why it is not
      */
-    Test2.verify = function verify(message) {
+    Test2.verify = function verify(message, long) {
         if (typeof message !== "object" || message === null)
             return "object expected";
+        if (long === undefined)
+            long = 0;
+        if (long > $util.recursionLimit)
+            return "maximum nesting depth exceeded";
         return null;
     };
 
@@ -386,7 +457,7 @@ $root.Test2 = (function() {
      * @param {Object.<string,*>} object Plain object
      * @returns {Test2} Test2
      */
-    Test2.fromObject = function fromObject(object) {
+    Test2.fromObject = function fromObject(object, long) {
         if (object instanceof $root.Test2)
             return object;
         return new $root.Test2();

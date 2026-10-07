@@ -16,6 +16,26 @@ tape.test("util", function(test) {
         test.same(o, { a: 2 }, "should merge existing keys");
         util.merge(o, { a: 3 }, true);
         test.same(o, { a: 2 }, "should not merge existing keys");
+        util.merge(o, { b: 1 }, { c: 2 });
+        test.same(o, { a: 2, b: 1, c: 2 }, "should merge multiple sources");
+        util.merge(o, { c: 3 }, { d: 4 }, true);
+        test.same(o, { a: 2, b: 1, c: 2, d: 4 }, "should merge multiple sources without overwriting existing keys");
+        util.merge(o, JSON.parse("{\"__proto__\":{\"marker\":true},\"prototype\":{\"marker\":true},\"constructor\":{\"marker\":true}}"));
+        test.equal(Object.getPrototypeOf(o), Object.prototype, "should keep the target object shape");
+        test.notOk(Object.prototype.hasOwnProperty.call(o, "__proto__"), "should skip reserved key __proto__");
+        test.notOk(Object.prototype.hasOwnProperty.call(o, "prototype"), "should skip reserved key prototype");
+        test.notOk(Object.prototype.hasOwnProperty.call(o, "constructor"), "should skip reserved key constructor");
+        test.equal(o.marker, undefined, "should not expose skipped values");
+        var guarded = {};
+        var accessed = false;
+        Object.defineProperty(guarded, "constructor", {
+            get: function() {
+                accessed = true;
+            }
+        });
+        util.merge(guarded, { constructor: 1, safe: 2 });
+        test.notOk(accessed, "should skip reserved keys before checking target values");
+        test.equal(guarded.safe, 2, "should still merge regular keys");
         test.end();
     });
 
@@ -66,6 +86,9 @@ tape.test("util", function(test) {
             test.notOk(util.isSet(instance, "p"), "should return that " + name + " on the prototype are not present");
             test.ok(util.isSet(instance, "i"), "should return that " + name + " on the instance ARE present");
         });
+        var nullProto = Object.create(null);
+        nullProto.i = "value";
+        test.ok(util.isSet(nullProto, "i"), "should support null-prototype objects");
 
          test.end();
     });
@@ -95,7 +118,20 @@ tape.test("util", function(test) {
 
         util.setProperty(o, 'prop.subprop', { subsub2: 7});
         test.same(o, {prop1: [5, 6], prop: {subprop: [{subsub: [5,6]}, {subsub2: 7}]}}, "should convert nested properties to array");
-        
+
+        var recursionLimit = util.recursionLimit;
+        util.recursionLimit = 3;
+        try {
+            test.doesNotThrow(function() {
+                util.setProperty({}, 'a.b.c', 1);
+            }, "should set property paths up to the recursion limit");
+            test.throws(function() {
+                util.setProperty({}, 'a.b.c.d', 1);
+            }, /max depth exceeded/, "should reject excessively nested property paths");
+        } finally {
+            util.recursionLimit = recursionLimit;
+        }
+
         util.setProperty({}, "__proto__.test", "value");
         test.is({}.test, undefined);
 
@@ -104,6 +140,63 @@ tape.test("util", function(test) {
 
         util.setProperty({}, "constructor.prototype.test", "value");
         test.is({}.test, undefined);
+
+        var objectKeys = Object.keys;
+        try {
+            util.setProperty({}, "constructor.keys", "value");
+            test.equal(Object.keys, objectKeys, "should not overwrite Object constructor properties");
+        } finally {
+            Object.keys = objectKeys;
+        }
+
+        test.end();
+    });
+
+    test.test(test.name + " - safeProp", function(test) {
+        test.equal(util.safeProp("validName"), ".validName", "should use dot notation for simple names");
+        test.equal(util.safeProp("bad\nfield").indexOf("\n"), -1, "should escape line feeds");
+        test.equal(util.safeProp("bad\rfield").indexOf("\r"), -1, "should escape carriage returns");
+        test.equal(util.safeProp("bad\u0000field").indexOf("\u0000"), -1, "should escape null bytes");
+
+        var root = protobuf.Root.fromJSON({
+            nested: {
+                Message: {
+                    fields: {
+                        "bad\nfield": { type: "string", id: 1 }
+                    }
+                }
+            }
+        });
+        var Message = root.lookupType("Message");
+        var msg = Message.create({ "bad\nfield": "ok" });
+        test.same(Message.toObject(msg), { "bad\nfield": "ok" }, "should generate usable accessors");
+
+        test.end();
+    });
+
+    test.test(test.name + " - type lookups", function(test) {
+        test.equal(Object.getPrototypeOf(protobuf.types.basic), null, "should not inherit basic type lookups");
+        test.equal(Object.getPrototypeOf(protobuf.types.defaults), null, "should not inherit default value lookups");
+        test.equal(Object.getPrototypeOf(protobuf.types.long), null, "should not inherit long type lookups");
+        test.equal(Object.getPrototypeOf(protobuf.types.mapKey), null, "should not inherit map key lookups");
+        test.equal(Object.getPrototypeOf(protobuf.types.packed), null, "should not inherit packed type lookups");
+
+        Object.prototype.notAType = 0;
+        try {
+            test.throws(function() {
+                protobuf.Root.fromJSON({
+                    nested: {
+                        Message: {
+                            fields: {
+                                value: { type: "notAType", id: 1 }
+                            }
+                        }
+                    }
+                });
+            }, /no such Type or Enum/, "should ignore inherited type lookup keys");
+        } finally {
+            delete Object.prototype.notAType;
+        }
 
         test.end();
     });
